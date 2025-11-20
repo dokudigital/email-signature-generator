@@ -91,7 +91,7 @@ Width: **760px** (auto-scaled in signature)
 
 ## ▶ Usage
 
-Open the generator in a browser:
+Open the generator in a browser: https://dokudigital.github.io/email-signature-generator/
 
 
 Fill the form → Click **Generate** → Copy from Preview.
