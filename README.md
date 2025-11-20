@@ -128,5 +128,5 @@ Distribution outside the company should follow DOKU policies.
 
 ## ✨ Author
 
-Built collaboratively with assistance from ChatGPT for HTML structure, responsiveness, and generator logic.
+Marketing DOKU.
 
