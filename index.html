@@ -150,7 +150,7 @@ function buildSignatureHtml({ nama, jabatan, hpFull, countryKey }) {
   const countriesLine = ["Indonesia", "Malaysia", "Singapore"]
     .map(name => {
       if (name === activeCountryName) {
-        return `<span style="color:#c00;font-weight:bold;font-size:12px;">${name}</span>`;
+        return `<span style="color:#c00;font-weight:bold;">${name}</span>`;
       }
       return name;
     })
@@ -207,7 +207,7 @@ function buildSignatureHtml({ nama, jabatan, hpFull, countryKey }) {
           </tr>
 
           <tr>
-            <td style="font-size:14px;padding-top:10px;">
+            <td style="font-size:12px;padding-top:10px;">
     ${countriesLine}
             </td>
           </tr>
