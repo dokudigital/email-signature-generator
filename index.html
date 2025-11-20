@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>DOKU Email Signature Generator — Clean Card</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body { background:#f5f7fb; }
+    .card { border-radius:12px; box-shadow:0 6px 20px rgba(22, 44, 77, 0.06); }
+    .form-control:focus { box-shadow:none; border-color:#c92a2a; }
+    label.small { font-size:0.85rem; color:#6c757d; }
+    #preview { background:#fff; padding:18px; border-radius:8px; border:1px solid #e9ecef; overflow:auto; min-height:120px; }
+    .preview-wrap { background:#ffffff; padding:12px; border-radius:8px; }
+    textarea#output { font-family: monospace; font-size:12px; }
+  </style>
+</head>
+
+<body>
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-12">
+      <div class="card p-4">
+        <div class="row g-4">
+
+          <!-- FORM -->
+          <div class="col-lg-4">
+            <h5 class="mb-3 border-bottom pb-3"><img class="me-3" src="https://cdn.prod.website-files.com/674ab654de930b217c6389c1/6756a9f7ba44cad5543f87e2_doku-logo-red.svg" width="60"><span class="pt-2">DOKU Signature Generator</span></h5>
+
+            <div class="mb-3">
+              <label class="small fw-bold text-dark">Full Name</label>
+              <input id="nama" class="form-control form-control-lg" placeholder="">
+            </div>
+
+            <div class="mb-3">
+              <label class="small fw-bold text-dark">Title</label>
+              <input id="jabatan" class="form-control" placeholder="">
+            </div>
+
+            <div class="mb-3">
+              <label class="small fw-bold text-dark">Country</label>
+              <select id="negara" class="form-select" onchange="updateCountry()">
+                <option value="id" selected>Indonesia (+62)</option>
+                <option value="my">Malaysia (+60)</option>
+                <option value="sg">Singapore (+65)</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="small fw-bold text-dark">Phone Number</label>
+              <div class="input-group">
+                <span id="prefix" class="input-group-text">+(62)</span>
+                <input id="hp" type="text" class="form-control" placeholder="812 xxxx xxxx">
+              </div>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button id="generateBtn" class="btn btn-danger btn-lg" onclick="generateSignature()">Generate Signature</button>
+              <button id="copyBtn" class="btn btn-outline-secondary" onclick="copyHTML()">Copy HTML</button>
+              <button id="downloadBtn" class="btn btn-ghost" onclick="downloadHTML()">Download .html</button>
+            </div>
+
+            <div class="mt-3">
+              <label class="small fw-bold" text-dark>HTML Output</label>
+              <textarea id="output" class="form-control" rows="8" readonly></textarea>
+            </div>
+
+          </div>
+
+          <!-- PREVIEW -->
+          <div class="col-lg-8">
+            <h6 class="mb-3 fw-bold text-dark">Preview</h6>
+            <div id="preview" class="preview-wrap">
+              <div id="previewInner"></div>
+            </div>
+
+            <div class="mt-3">
+              <small class="text-muted">
+                "Copy from the Preview area and paste it into your Gmail/Outlook signature. If the appearance changes, regenerate it after selecting your country.
+              </small>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===============================
+//  CONSTANTS
+// ===============================
+
+// Final provided logo
+const LOGO_URL = "https://raw.githubusercontent.com/dokudigital/emailsignature/refs/heads/main/logo-signature.png";
+
+// Country office data
+const COUNTRY_DATA = {
+  id: {
+    code: "62",
+    city: "Jakarta",
+    addressHtml: `Artha Graha Building, 11<sup>th</sup> Floor<br>Sudirman Central Business District<br>Jl. Jend. Sudirman Kav. 52–53<br>Jakarta 12190`,
+    tel: "Tel./Fax: +(62) 21 515 0785 / +(62) 21 515 4758",
+    website: "www.doku.com"
+  },
+  my: {
+    code: "60",
+    city: "Kuala Lumpur",
+    addressHtml: `Boulevard Offices, Unit 27-8, Level 8<br>Mid Valley City, Lingkaran Syed Putra<br>Kuala Lumpur, 59200`,
+    tel: "Tel.: +(60) 03-2771 2707",
+    website: "www.doku.com.my"
+  },
+  sg: {
+    code: "65",
+    city: "Singapore",
+    addressHtml: `Boulevard Offices, Unit 27-8, Level 8<br>Mid Valley City, Lingkaran Syed Putra<br>Kuala Lumpur, 59200`,
+    tel: "Tel.: +(65) 03-2771 2707",
+    website: "www.doku.com.sg"
+  }
+};
+
+// Escape HTML for attr
+function esc(str){ return String(str||"").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+// Update prefix HP
+function updateCountry(){
+  const c = document.getElementById("negara").value;
+  document.getElementById("prefix").innerText = "+(" + COUNTRY_DATA[c].code + ")";
+}
+
+// ===============================
+//  BUILD SIGNATURE HTML
+// ===============================
+function buildSignatureHtml({ nama, jabatan, hpFull, countryKey }) {
+  const d = COUNTRY_DATA[countryKey];
+
+  // Penanda negara aktif (nama tampil)
+  const activeCountryName = {
+    id: "Indonesia",
+    my: "Malaysia",
+    sg: "Singapore"
+  }[countryKey];
+
+  // Buat daftar negara dengan highlight untuk yang aktif
+  const countriesLine = ["Indonesia", "Malaysia", "Singapore"]
+    .map(name => {
+      if (name === activeCountryName) {
+        return `<span style="color:#c00;font-weight:bold;">${name}</span>`;
+      }
+      return name;
+    })
+    .join(" | ");
+
+  return `
+<table cellpadding="0" cellspacing="0" border="0" width="860" style="width:860px;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+  <tr><td>
+
+  <table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,sans-serif;color:#000;width:100%;">
+    <tr>
+
+      <!-- LEFT -->
+      <td valign="top" style="padding-right:20px;max-width:480px;">
+        <table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,sans-serif;color:#000;">
+          <tr><td style="font-size:14px;font-weight:bold;">${esc(nama)}</td></tr>
+          <tr><td style="font-size:12px;padding-top:2px;">${esc(jabatan)}</td></tr>
+          <tr><td style="font-size:12px;padding-top:2px;">${esc(hpFull)}</td></tr>
+
+          <tr><td style="font-size:14px;font-weight:bold;padding-top:20px;">${esc(d.city)}</td></tr>
+
+          <tr>
+            <td style="font-size:12px;line-height:18px;">
+              ${d.addressHtml}
+            </td>
+          </tr>
+
+          <tr><td style="font-size:12px;padding-top:12px;line-height:18px;">${esc(d.tel)}</td></tr>
+
+          <tr>
+            <td style="font-size:12px;font-weight:bold;padding-top:6px;">
+              <a href="https://${esc(d.website)}" style="color:#000;text-decoration:none;">${esc(d.website)}</a>
+            </td>
+          </tr>
+        </table>
+      </td>
+
+      <!-- DIVIDER -->
+      <td valign="top" style="border-left:1px solid #999;width:1px;padding-left:20px;"></td>
+
+      <!-- RIGHT -->
+      <td valign="top" style="padding-left:20px;max-width:520px;">
+        <table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,sans-serif;color:#000;width:100%;">
+          <tr>
+            <td style="padding-bottom:10px;">
+              <img src="${LOGO_URL}" width="300" style="display:block;">
+            </td>
+          </tr>
+
+          <tr>
+            <td style="font-size:12px; line-height:17px; color:#555; text-align:justify; text-justify:inter-word;">
+              This e-mail transmission is intended only for the use of the individual or entity named above and may contain information that is confidential, privileged, and/or exempt from disclosure under applicable law. If you are not the intended recipient, you are hereby notified that any review, disclosure, copying, distribution, or other use of any of the information contained in this transmission is strictly prohibited. If you have received this transmission in error, please immediately notify the sender by e-mail at the above address and delete it from your computer system; you should not copy the message or disclose its content to anyone. The content of the message and/or attachments may not reflect the view and opinions of the originating company or any party it is representing.
+            </td>
+          </tr>
+
+          <tr>
+            <td style="font-size:14px;padding-top:10px;">
+    ${countriesLine}
+            </td>
+          </tr>
+        </table>
+      </td>
+
+    </tr>
+  </table>
+
+  </td></tr>
+</table>
+`.trim();
+}
+
+// ===============================
+//  GENERATE
+// ===============================
+function generateSignature() {
+  const nama = document.getElementById("nama").value.trim() || "Nama Lengkap";
+  const jabatan = document.getElementById("jabatan").value.trim() || "Jabatan";
+  const negara = document.getElementById("negara").value;
+  const hp = document.getElementById("hp").value.trim() || "812 xxxx xxxx";
+
+  const fullHP = "+(" + COUNTRY_DATA[negara].code + ") " + hp;
+
+  const html = buildSignatureHtml({
+    nama, jabatan, hpFull: fullHP, countryKey: negara
+  });
+
+  document.getElementById("output").value = html;
+  document.getElementById("previewInner").innerHTML = html;
+}
+
+// ===============================
+//  COPY HTML
+// ===============================
+async function copyHTML(){
+  const html = document.getElementById("output").value;
+  if(!html){ alert("Generate dulu."); return; }
+
+  try {
+    await navigator.clipboard.writeText(html);
+    alert("Copied!");
+  } catch(e){
+    alert("Gagal menyalin. Copy manual dari kotak HTML.");
+  }
+}
+
+// ===============================
+//  DOWNLOAD HTML
+// ===============================
+function downloadHTML(){
+  const html = document.getElementById("output").value;
+  if(!html){ alert("Generate dulu."); return; }
+
+  const wrapper =
+`<!doctype html><html><head><meta charset="utf-8"></head><body>${html}</body></html>`;
+
+  const blob = new Blob([wrapper], {type:"text/html"});
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "doku-signature.html";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+// ===============================
+//  INITIAL BLANK PAGE
+// ===============================
+window.onload = () => {
+  document.getElementById("nama").value = "";
+  document.getElementById("jabatan").value = "";
+  document.getElementById("negara").value = "id";
+  document.getElementById("hp").value = "";
+  document.getElementById("prefix").innerText = "+(62)";
+  document.getElementById("previewInner").innerHTML = "";
+  document.getElementById("output").value = "";
+};
+</script>
+
+</body>
+</html>
